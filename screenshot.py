@@ -1,11 +1,10 @@
-"""
-Screenshot utility for Panel apps.
+"""Screenshot utility for Panel apps.
 
 Captures the current layout state (with live widget values and full
-styling) by saving to HTML via Panel's save(), then rendering to PNG
-with Playwright.
+styling) by saving to HTML via Panel's ``save()`` method, then rendering
+to PNG with Playwright.
 
-Usage — programmatic (from any callback):
+Example::
 
     from screenshot import save_screenshot
 
@@ -21,7 +20,9 @@ import os
 import re
 import tempfile
 import threading
+from collections.abc import Callable
 from datetime import datetime
+from typing import Union
 
 import panel as pn
 from bokeh.resources import INLINE
@@ -29,10 +30,18 @@ from bokeh.resources import INLINE
 log = logging.getLogger(__name__)
 
 
-
 def _fix_panel_css_paths(html_path: str) -> None:
-    """Replace relative Panel CSS paths with CDN URLs so the HTML
-    renders correctly when opened as a local file."""
+    """Replace relative Panel CSS paths with CDN URLs.
+
+    Panel's ``save()`` emits relative ``static/extensions/panel/...``
+    paths when called inside a running server session.  These break when
+    the HTML is opened via ``file://``.  This function rewrites them to
+    absolute CDN URLs based on the installed Panel version.
+
+    Args:
+        html_path: Path to the saved HTML file.  The file is modified
+            in-place.
+    """
     with open(html_path, "r") as f:
         html = f.read()
 
@@ -51,7 +60,16 @@ def _fix_panel_css_paths(html_path: str) -> None:
 
 
 def _render_html_to_png(html_path: str, output_path: str) -> None:
-    """Render an HTML file to PNG using Playwright. Thread-safe."""
+    """Render an HTML file to a PNG image using Playwright.
+
+    Launches a headless Chromium browser, navigates to the local HTML
+    file, waits for network activity to settle, and saves a full-page
+    screenshot.  Safe to call from any thread.
+
+    Args:
+        html_path: Absolute path to the HTML file to render.
+        output_path: Absolute path where the PNG will be written.
+    """
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
@@ -64,24 +82,30 @@ def _render_html_to_png(html_path: str, output_path: str) -> None:
 
 
 def save_screenshot(
-    layout,
+    layout: Union[pn.viewable.Viewable, Callable[[], pn.viewable.Viewable]],
     save_dir: str = "screenshots",
     filename: str | None = None,
 ) -> str:
-    """
-    Take a screenshot of a Panel layout and save it as a PNG file.
+    """Take a screenshot of a Panel layout and save it as a PNG file.
 
-    Captures the current widget state. Safe to call from any Panel
-    callback — Playwright runs in a separate thread automatically.
+    Captures the current widget state.  Safe to call from any Panel
+    callback -- Playwright runs in a separate thread automatically.
 
     Args:
-        layout: The Panel component to capture (Column, Row, etc.),
-                or a callable returning one.
-        save_dir: Directory to save screenshots in.
-        filename: Output filename. Defaults to screenshot_YYYYMMDD_HHMMSS.png.
+        layout: The Panel component to capture (``Column``, ``Row``,
+            etc.), or a zero-argument callable returning one (use
+            ``lambda: app`` for circular references).
+        save_dir: Directory to save screenshots in.  Created
+            automatically if it does not exist.
+        filename: Output filename.  Defaults to
+            ``screenshot_YYYYMMDD_HHMMSS.png``.
 
     Returns:
         Absolute path to the saved PNG file.
+
+    Raises:
+        Exception: Re-raises any exception that occurs during
+            Playwright rendering in the background thread.
     """
     target = layout() if callable(layout) else layout
     os.makedirs(save_dir, exist_ok=True)

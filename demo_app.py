@@ -21,9 +21,17 @@ params_panel = pn.Column(
 
 
 def on_run(event):
+    """Handle the Run Report button click.
 
-    # Capture current parameter state before running
+    Captures the current app state as a PNG screenshot and logs the
+    resulting file path.
+
+    Args:
+        event: The Bokeh button-click event (unused, required by
+            ``on_click`` callback signature).
+    """
     path = save_screenshot(lambda: app)
+    print(f"Screenshot saved to {path}")
 
 
 run_btn.on_click(on_run)
