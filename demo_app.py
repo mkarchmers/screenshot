@@ -1,7 +1,7 @@
 """Demo Panel app showing both programmatic and button screenshot usage."""
 
 import panel as pn
-from screenshot import save_screenshot, screenshot_button
+from screenshot import save_screenshot
 
 pn.extension()
 
@@ -28,13 +28,11 @@ def on_run(event):
 
 run_btn.on_click(on_run)
 
-# --- Button usage ---
-ss_btn = screenshot_button(layout=lambda: app)
 
 app = pn.Column(
     "# Demo App",
     params_panel,
     pn.layout.Divider(),
-    pn.Row(run_btn, ss_btn)
+    pn.Row(run_btn)
 )
 app.servable()

@@ -24,8 +24,8 @@ cleanup temp HTML, return path
 
 ## Key Files
 
-- `screenshot.py` — core library: `save_screenshot()` and `screenshot_button()`
-- `demo_app.py` — example app showing both programmatic and button usage
+- `screenshot.py` — core library: `save_screenshot()`
+- `demo_app.py` — example app
 
 ## Issues Faced and Design Choices
 
@@ -78,15 +78,6 @@ def on_run(event):
 ```
 
 The `layout` argument can be a Panel component or a callable returning one (use `lambda: app` for circular references).
-
-### `screenshot_button(layout, save_dir="screenshots", name="Save Screenshot", width=200) -> pn.Column`
-
-UI wrapper around `save_screenshot()`. Returns a Column with a button and status alert.
-
-```python
-btn = screenshot_button(layout=lambda: app)
-app = pn.Column("# My App", slider, btn)
-```
 
 ## Dependencies
 

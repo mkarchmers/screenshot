@@ -13,13 +13,7 @@ Usage — programmatic (from any callback):
         path = save_screenshot(app)
         print(f"Saved: {path}")
 
-Usage — button:
-
-    from screenshot import screenshot_button
-
-    btn = screenshot_button(layout=lambda: app)
-    app = pn.Column("# My App", slider, btn)
-    app.servable()
+    app = pn.Column("# My App", slider)
 """
 
 import logging
@@ -129,45 +123,3 @@ def save_screenshot(
     finally:
         if tmp_html_path and os.path.exists(tmp_html_path):
             os.unlink(tmp_html_path)
-
-
-def screenshot_button(
-    layout,
-    save_dir: str = "screenshots",
-    name: str = "Save Screenshot",
-    width: int = 200,
-) -> pn.Column:
-    """
-    Create a Panel button that takes a screenshot of the running app.
-
-    Args:
-        layout: A callable (e.g. lambda) returning the Panel layout to capture.
-                Use a callable so the layout can reference the button itself:
-                    btn = screenshot_button(layout=lambda: app)
-                    app = pn.Column(..., btn)
-        save_dir: Directory to save screenshots in.
-        name: Button label.
-        width: Button width in pixels.
-
-    Returns:
-        A pn.Column containing the button and a status indicator.
-    """
-    btn = pn.widgets.Button(name=name, button_type="primary", width=width)
-    status = pn.pane.Alert("", alert_type="info", visible=False)
-
-    def on_click(event):
-        status.visible = True
-        status.alert_type = "info"
-        status.object = "Taking screenshot..."
-
-        try:
-            abs_path = save_screenshot(layout, save_dir=save_dir)
-            status.alert_type = "success"
-            status.object = f"Saved: {abs_path}"
-        except Exception as e:
-            log.exception("Screenshot failed")
-            status.alert_type = "danger"
-            status.object = f"Error: {e}"
-
-    btn.on_click(on_click)
-    return pn.Column(btn, status)
