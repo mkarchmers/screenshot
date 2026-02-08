@@ -1,5 +1,7 @@
 """Demo Panel app showing both programmatic and button screenshot usage."""
 
+import asyncio
+
 import panel as pn
 from screenshot import save_screenshot
 
@@ -20,17 +22,18 @@ params_panel = pn.Column(
 )
 
 
-def on_run(event):
+async def on_run(event):
     """Handle the Run Report button click.
 
     Captures the current app state as a PNG screenshot and logs the
-    resulting file path.
+    resulting file path.  Runs the blocking screenshot capture in a
+    separate thread so the Tornado event loop stays responsive.
 
     Args:
         event: The Bokeh button-click event (unused, required by
             ``on_click`` callback signature).
     """
-    path = save_screenshot(lambda: app)
+    path = await asyncio.to_thread(save_screenshot, lambda: app)
     print(f"Screenshot saved to {path}")
 
 

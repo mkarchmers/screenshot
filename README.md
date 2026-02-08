@@ -47,6 +47,15 @@ cleanup temp HTML, return path
 
 **Solution:** Run Playwright in a `threading.Thread`. The `save()` call (pure serialization) runs on the caller thread, then the Playwright rendering runs in a daemon thread. `thread.join()` blocks until the screenshot is complete, making `save_screenshot()` a simple blocking call from the caller's perspective.
 
+**Important:** Because `save_screenshot()` is blocking, callers inside Panel callbacks should use `asyncio.to_thread` to avoid freezing the Tornado event loop:
+
+```python
+import asyncio
+
+async def on_run(event):
+    path = await asyncio.to_thread(save_screenshot, lambda: app)
+```
+
 ### 4. Event loop deadlock (earlier Playwright-visits-server approach)
 
 **Problem:** When using Playwright to visit the live server URL, the `on_click` callback blocks the Tornado event loop. Playwright's headless browser tries to connect to the same server, but the server can't serve the page while the callback is blocked — deadlock.
@@ -69,15 +78,25 @@ When `save()` is called outside a server session (standalone script), Panel uses
 
 ### `save_screenshot(layout, save_dir="screenshots", filename=None) -> str`
 
-Blocking call. Safe to use from any Panel callback. Returns absolute path to saved PNG.
-
-```python
-def on_run(event):
-    path = save_screenshot(params_panel, save_dir="reports")
-    # path = "/abs/path/to/reports/screenshot_20260208_091732.png"
-```
+Blocking call. Returns absolute path to saved PNG.
 
 The `layout` argument can be a Panel component or a callable returning one (use `lambda: app` for circular references).
+
+**From a sync context** (standalone script):
+
+```python
+path = save_screenshot(params_panel, save_dir="reports")
+```
+
+**From a Panel callback** (use `asyncio.to_thread` to keep the UI responsive):
+
+```python
+import asyncio
+
+async def on_run(event):
+    path = await asyncio.to_thread(save_screenshot, params_panel, save_dir="reports")
+    # path = "/abs/path/to/reports/screenshot_20260208_091732.png"
+```
 
 ## Dependencies
 
